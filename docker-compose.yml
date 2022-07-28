@@ -1,0 +1,87 @@
+version: '3.7'
+services:
+  &app-service app: &app-service-template
+    build:
+      args:
+        user: ilya
+        uid: 1000
+      context: ./docker/app/
+      dockerfile: Dockerfile
+    image: puzzle.food.local
+    container_name: puzzle.food.local-app
+    user: root
+    hostname: *app-service
+    restart: always
+    working_dir: /var/www/puzzle.food.local
+    volumes:
+      - ./src:/var/www/puzzle.food.local:rw
+      - ./docker/app/etc/php/php.ini:/usr/local/etc/php/conf.d/php.ini
+      - ./docker/app/etc/php/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf
+    depends_on:
+      - mysql
+    networks:
+      # - app-network
+      static-network:
+        ipv4_address: 172.25.0.10
+  
+  &scheduler-service scheduler:
+    <<: *app-service-template
+    container_name: puzzle.food.local-scheduler
+    restart: always
+    hostname: *scheduler-service
+    command: php /var/www/puzzle.food.local/artisan schedule:work
+    networks:
+      # - app-network
+      static-network:
+        ipv4_address: 172.25.0.8
+
+  &mysqlname mysql:
+    image: mysql:8.0
+    container_name: puzzle.food.local-mysql
+    restart: always
+    hostname: *mysqlname
+    environment: 
+      MYSQL_DATABASE: puzzleFood
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: dev
+      MYSQL_PASSWORD: 123
+    networks:
+      # - app-network
+      static-network:
+        ipv4_address: 172.25.0.3
+
+  &mysqladmin adminer:
+      image: adminer
+      container_name: puzzle.food.local-adminer
+      restart: always
+      hostname: *mysqladmin
+      ports: 
+        - 127.0.0.1:5454:8080
+      networks:
+        # - app-network
+        static-network:
+          ipv4_address: 172.25.0.16
+
+  &nginxname nginx:
+    image: nginx:1.17-alpine
+    container_name: puzzle.food.local-nginx
+    restart: always
+    hostname: *nginxname
+    ports:
+      - 0.0.0.0:8080:80
+    volumes:
+      - ./src:/var/www/puzzle.food.local
+      - ./docker/nginx:/etc/nginx/conf.d
+      - ./logNginx:/var/log/nginx/
+    networks:
+      static-network:
+        ipv4_address: 172.25.0.4
+      # - app-network
+
+networks:
+  # app-network:
+  #   driver: bridge
+  static-network:
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16  
