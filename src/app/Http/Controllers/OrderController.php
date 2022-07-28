@@ -30,7 +30,7 @@ class OrderController extends Controller
     {
         $orders = Order::create($request->validated());
 
-        return getSuccess(['orders' => $orders]);
+        return getSuccess(['order' => $orders], 201);
     }
 
     /**
