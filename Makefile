@@ -9,7 +9,6 @@ SHELL = /bin/sh
 APP_CONTAINER_NAME := app
 NODE_CONTAINER_NAME := node
 NGINX_CONTAINER_NAME := nginx
-PGSQL_CONTAINER_NAME := pgsql
 
 .PHONY : help build \
          up down restart shell install
@@ -39,12 +38,10 @@ restart: up ## Restart all started for development containers
 shell: up ## Start shell into application container
 	docker-compose exec "$(APP_CONTAINER_NAME)" /bin/sh
 
-dump_bd: up ## Running a script that makes a database dump and loads it locally
-	docker-compose exec "$(PGSQL_CONTAINER_NAME)" /var/database/update_database.sh
-
-install: up dump_bd ## Install application dependencies into application container
+install: up ## Install application dependencies into application container
 	docker-compose exec "$(APP_CONTAINER_NAME)" composer update
-	docker-compose run --rm "$(NODE_CONTAINER_NAME)" npm install
+	docker-compose exec "$(APP_CONTAINER_NAME)" php artisan migrate
+	docker-compose exec "$(APP_CONTAINER_NAME)" php artisan test
 
 watch: up ## Start watching assets for changes (node)
 	docker-compose run --rm "$(NODE_CONTAINER_NAME)" npm run dev
@@ -52,11 +49,9 @@ watch: up ## Start watching assets for changes (node)
 init: up ## Make full application initialization
 	docker-compose run --rm "$(NODE_CONTAINER_NAME)" npm run build
 
-ebash: up ## Full Application Build
-	docker-compose exec app /var/www/build/build_npm.sh
-	docker-compose run --rm "$(NODE_CONTAINER_NAME)" npm run build
-	docker-compose exec app /var/www/build/build_php.sh
-	
+testing: up ## Make testing full application
+	docker-compose exec "$(APP_CONTAINER_NAME)" php artisan test
+
 npm: ## allows you to enter an arbitrary command for npm(make npm command="npm install")
 	docker-compose run --rm "$(NODE_CONTAINER_NAME)" $(command)
 
