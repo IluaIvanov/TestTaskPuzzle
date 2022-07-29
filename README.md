@@ -1,3 +1,6 @@
+#Test task
+Задание: реализовать REST API методы для сохранения, редактирования и получения Заказа. Заказ должен содержать номер, фио, и общую сумму заказа, а так же дату его создания и адрес доставки. Задание необходимо реализовать на Laravel.
+
 ## System requirements
 
 For local application starting (for development) make sure that you have locally installed next applications:
